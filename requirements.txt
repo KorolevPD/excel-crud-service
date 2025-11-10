@@ -1,0 +1,9 @@
+fastapi
+pandas
+openpyxl
+sqlalchemy
+psycopg2
+asyncpg
+alembic
+pydantic
+python-dotenv

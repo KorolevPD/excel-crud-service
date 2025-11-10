@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-report-service"
+version = "0.1.0"
+description = "Сервис для загрузки, обновления и анализа табличных отчётов с Excel и REST/gRPC API"
+authors = [{ name = "Pavel Korolev" }]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pandas",
+    "openpyxl",
+    "sqlalchemy",
+    "alembic",
+    "asyncpg",
+    "pydantic",
+    "python-multipart",
+    "jinja2",
+    "grpcio",
+    "aiofiles",
+    "loguru",
+    "httpx"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "black",
+    "isort",
+    "mypy"
+]
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503"]
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+
+[tool.isort]
+profile = "wemake"
+
+[tool.mypy]
+strict = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "-v"
