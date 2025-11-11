@@ -1,39 +1,34 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "data-report-service"
+name = "excel-crud-service"
 version = "0.1.0"
-description = "Сервис для загрузки, обновления и анализа табличных отчётов с Excel и REST/gRPC API"
-authors = [{ name = "Pavel Korolev" }]
+description = "Сервис для загрузки, обновления и анализа табличных отчётов"
+authors = [
+    {name = "Pavel Korolev",email = "pdkorolev@yandex.ru"}
+]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi",
-    "uvicorn[standard]",
-    "pandas",
-    "openpyxl",
-    "sqlalchemy",
-    "alembic",
-    "asyncpg",
-    "pydantic",
-    "python-multipart",
-    "jinja2",
-    "grpcio",
-    "aiofiles",
-    "loguru",
-    "httpx"
+    "fastapi (>=0.121.1,<0.122.0)",
+    "faststream (>=0.6.3,<0.7.0)",
+    "pandas (>=2.3.3,<3.0.0)",
+    "openpyxl (>=3.1.5,<4.0.0)",
+    "sqlalchemy (>=2.0.44,<3.0.0)",
+    "psycopg2 (>=2.9.11,<3.0.0)",
+    "alembic (>=1.17.1,<2.0.0)",
+    "pydantic (>=2.12.4,<3.0.0)",
+    "python-dotenv (>=1.2.1,<2.0.0)"
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-asyncio",
-    "black",
-    "isort",
-    "mypy"
-]
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-asyncio = "^0.24.0"
+black = "^24.8.0"
+isort = "^5.13.2"
+mypy = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.flake8]
 max-line-length = 120
