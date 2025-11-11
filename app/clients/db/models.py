@@ -3,6 +3,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 class ControllerBase(DeclarativeBase):
-    """Базовый класс для всех моделей контроллера."""
+    """Базовый класс для моделей контроллера."""
 
     metadata = MetaData(schema="controller")

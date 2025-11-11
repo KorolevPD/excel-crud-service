@@ -1,22 +1,6 @@
-"""
-Модели SQLAlchemy для табличных отчётов (EAV).
-
-- TableReport: метаданные отчёта
-- TableReportRow: строка отчёта с уникальным идентификатором
-- TableReportValue: значение ячейки: (row_id, column_name) -> value
-"""
-
 from typing import Any, Dict, List
 
-from sqlalchemy import (
-    Boolean,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
