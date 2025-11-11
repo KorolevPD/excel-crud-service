@@ -1,5 +1,5 @@
-import os
 from logging.config import fileConfig
+import os
 from typing import Any, cast
 
 from dotenv import load_dotenv

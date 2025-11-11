@@ -1,5 +1,5 @@
 """
-Создание таблиц табличных отчётов (EAV)
+Создание таблиц табличных отчётов
 
 Revision ID: 011
 Revises: 010_create_reports_table
@@ -15,12 +15,13 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision: str = "011_create_table_reports"
-down_revision: Union[str, Sequence[str], None] = None  # '010_create_reports_table'
+down_revision: Union[str, Sequence[str], None] = None  # "010_create_reports_table"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Создаёт таблицы table_reports, table_report_rows и table_report_values в схеме controller"""
 
     schema = "controller"
 
@@ -29,13 +30,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("name", sa.String(length=255), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.func.now(),
-            onupdate=sa.func.now(),
-            nullable=False,
-        ),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("user_id", sa.String(length=255), nullable=False),
         sa.Column("template_id", sa.Integer(), nullable=True),
         sa.Column("columns_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
@@ -94,6 +89,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Удаляет таблицы table_report_values, table_report_rows и table_reports из схемы controller."""
 
     schema = "controller"
 
