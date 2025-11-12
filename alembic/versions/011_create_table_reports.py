@@ -29,14 +29,18 @@ def upgrade() -> None:
         "table_reports",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("name", sa.String(length=255), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), default=sa.func.now(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), default=sa.func.now(), onupdate=sa.func.now(), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            onupdate=sa.func.now(),
+            nullable=False,
         ),
         sa.Column("user_id", sa.String(length=255), nullable=False),
         sa.Column("template_id", sa.Integer(), nullable=True),
         sa.Column("columns_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("total_rows", sa.Integer(), default="0", nullable=False),
+        sa.Column("total_rows", sa.Integer(), server_default="0", nullable=False),
         sa.Column("additional_params", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         schema=schema,
     )
@@ -51,12 +55,16 @@ def upgrade() -> None:
             nullable=False,
             index=True,
         ),
-        sa.Column("unique_value", sa.String(length=255), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), default=sa.func.now(), nullable=False),
+        sa.Column("unique_value", sa.String(length=255), nullable=False, index=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), default=sa.func.now(), onupdate=sa.func.now(), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            onupdate=sa.func.now(),
+            nullable=False,
         ),
-        sa.Column("is_deleted", sa.Boolean(), default=sa.false(), nullable=False),
+        sa.Column("is_deleted", sa.Boolean(), server_default=sa.false(), nullable=False, index=True),
         sa.UniqueConstraint("report_id", "unique_value", name="uq_table_report_rows_report_id_unique_value"),
         schema=schema,
     )
@@ -71,13 +79,25 @@ def upgrade() -> None:
             nullable=False,
             index=True,
         ),
-        sa.Column("column_name", sa.String(length=100), nullable=False),
+        sa.Column("column_name", sa.String(length=100), nullable=False, index=True),
         sa.Column("value", sa.Text(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), default=sa.func.now(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), default=sa.func.now(), onupdate=sa.func.now(), nullable=False
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            onupdate=sa.func.now(),
+            nullable=False,
         ),
         sa.UniqueConstraint("row_id", "column_name", name="uq_table_report_values_row_id_column_name"),
+        schema=schema,
+    )
+
+    op.create_index(
+        "ix_controller_table_report_values_row_id_column_name",
+        "table_report_values",
+        ["row_id", "column_name"],
+        unique=True,
         schema=schema,
     )
 
@@ -87,6 +107,6 @@ def downgrade() -> None:
 
     schema = "controller"
 
-    op.drop_table("table_report_values", schema=schema)
-    op.drop_table("table_report_rows", schema=schema)
-    op.drop_table("table_reports", schema=schema)
+    op.drop_table("table_report_values", if_exists=True, schema=schema)
+    op.drop_table("table_report_rows", if_exists=True, schema=schema)
+    op.drop_table("table_reports", if_exists=True, schema=schema)
