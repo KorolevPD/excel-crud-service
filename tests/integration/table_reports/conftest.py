@@ -1,4 +1,3 @@
-# tests/conftest.py
 from asyncio import AbstractEventLoop, get_event_loop_policy
 from collections.abc import AsyncGenerator, Generator
 
