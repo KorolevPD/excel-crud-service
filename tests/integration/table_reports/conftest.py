@@ -18,7 +18,7 @@ def event_loop() -> Generator[AbstractEventLoop, None]:
     loop.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 async def async_engine() -> AsyncGenerator[AsyncEngine, None]:
     engine = create_async_engine(settings.DATABASE_URL_ASYNC, echo=False, future=True)
     async with engine.begin() as conn:
@@ -29,11 +29,7 @@ async def async_engine() -> AsyncGenerator[AsyncEngine, None]:
 
 @pytest.fixture()
 async def async_session(async_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
-    async_session_maker = async_sessionmaker(
-        bind=async_engine,
-        expire_on_commit=False,
-        class_=AsyncSession,
-    )
+    async_session_maker = async_sessionmaker(async_engine, expire_on_commit=False)
 
     async with async_engine.connect() as connection:
         transaction = await connection.begin()
@@ -54,12 +50,4 @@ async def table_report() -> TableReport:
         user_id="user_1",
         columns_metadata={"col1": "string", "col2": "int"},
         total_rows=0,
-    )
-
-
-@pytest.fixture
-async def table_report_row(table_report: TableReport) -> TableReportRow:
-    return TableReportRow(
-        report_id=table_report.id,
-        unique_value="Unique Value",
     )
