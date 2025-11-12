@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, false
 
 from app.clients.db.models import ControllerBase
 
@@ -62,7 +62,7 @@ class TableReportRow(ControllerBase):
         onupdate=func.now(),
         nullable=False,
     )
-    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default="false")
+    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=false())
 
     report: Mapped[TableReport] = relationship("TableReport", back_populates="rows")
     values: Mapped[List["TableReportValue"]] = relationship(

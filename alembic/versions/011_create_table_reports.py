@@ -56,7 +56,7 @@ def upgrade() -> None:
         sa.Column(
             "updated_at", sa.DateTime(timezone=True), default=sa.func.now(), onupdate=sa.func.now(), nullable=False
         ),
-        sa.Column("is_deleted", sa.Boolean(), default=sa.text("false"), nullable=False),
+        sa.Column("is_deleted", sa.Boolean(), default=sa.false(), nullable=False),
         sa.UniqueConstraint("report_id", "unique_value", name="uq_table_report_rows_report_id_unique_value"),
         schema=schema,
     )
