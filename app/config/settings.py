@@ -5,8 +5,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Глобальные настройки."""
 
-    DATABASE_URL: str = ''
-    DATABASE_URL_ASYNC: str = ''
+    DATABASE_URL: str = ""
+    DATABASE_URL_ASYNC: str = ""
     ENV: str = "dev"
     DEBUG: bool = True
 

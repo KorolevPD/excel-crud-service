@@ -31,11 +31,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(length=255), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), default=sa.func.now(), nullable=False),
         sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            default=sa.func.now(),
-            onupdate=sa.func.now(),
-            nullable=False
+            "updated_at", sa.DateTime(timezone=True), default=sa.func.now(), onupdate=sa.func.now(), nullable=False
         ),
         sa.Column("user_id", sa.String(length=255), nullable=False),
         sa.Column("template_id", sa.Integer(), nullable=True),
@@ -58,11 +54,7 @@ def upgrade() -> None:
         sa.Column("unique_value", sa.String(length=255), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), default=sa.func.now(), nullable=False),
         sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            default=sa.func.now(),
-            onupdate=sa.func.now(),
-            nullable=False
+            "updated_at", sa.DateTime(timezone=True), default=sa.func.now(), onupdate=sa.func.now(), nullable=False
         ),
         sa.Column("is_deleted", sa.Boolean(), default=sa.text("false"), nullable=False),
         sa.UniqueConstraint("report_id", "unique_value", name="uq_table_report_rows_report_id_unique_value"),
@@ -83,11 +75,7 @@ def upgrade() -> None:
         sa.Column("value", sa.Text(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), default=sa.func.now(), nullable=False),
         sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            default=sa.func.now(),
-            onupdate=sa.func.now(),
-            nullable=False
+            "updated_at", sa.DateTime(timezone=True), default=sa.func.now(), onupdate=sa.func.now(), nullable=False
         ),
         sa.UniqueConstraint("row_id", "column_name", name="uq_table_report_values_row_id_column_name"),
         schema=schema,
