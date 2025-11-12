@@ -1,10 +1,12 @@
+from datetime import datetime, timezone
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import select, update as sa_update
+from sqlalchemy import func, select, update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.clients.db.table_report_model import TableReport, TableReportRow
+from app.clients.db.table_report_model import TableReport, TableReportRow, TableReportValue
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,8 @@ class TableReportRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
+    # --- REPORT CRUD ---
+
     async def create(self, report: TableReport) -> TableReport:
         """
         Создаёт новый табличный отчёт в базе данных.
@@ -24,7 +28,7 @@ class TableReportRepository:
                 содержать все обязательные поля (name, user_id и т.д).
 
         Returns:
-            TableReport: Сохранённый объект отчёта с установленным ``id`` и актуальными данными из БД.
+            TableReport: Сохранённый объект отчёта с установленным "id" и актуальными данными из БД.
 
         Raises:
             SQLAlchemyError: Если произошла ошибка на уровне базы данных(нарушение ограничений,
@@ -64,12 +68,12 @@ class TableReportRepository:
             logger.exception("Ошибка при получении отчета")
             raise
 
-    async def update(self, report_id: int, **kwargs: Any) -> TableReport:
+    async def update(self, report: TableReport, **kwargs: Any) -> TableReport:
         """
         Обновляет поля отчёта по его ID и возвращает обновлённую сущность.
 
         Args:
-            report_id (int): Идентификатор отчёта, который нужно обновить.
+            report (TableReport): Отчёта, который нужно обновить.
             **kwargs (Any): Поля и значения для обновления (например, title="Новый").
 
         Returns:
@@ -82,12 +86,13 @@ class TableReportRepository:
             Exception: Любая другая непредвиденная ошибка.
         """
         try:
-            stmt = sa_update(TableReport).where(TableReport.id == report_id).values(**kwargs).returning(TableReport)
-            result = await self.session.execute(stmt)
-            updated = result.scalar_one()
+            kwargs["updated_at"] = datetime.now(timezone.utc)
+            for key, value in kwargs.items():
+                setattr(report, key, value)
 
             await self.session.commit()
-            return updated
+            await self.session.refresh(report)
+            return report
 
         except Exception:
             await self.session.rollback()
@@ -96,9 +101,9 @@ class TableReportRepository:
 
     async def delete(self, report_id: int) -> None:
         """
-        Удаляет отчет (помечает все его строки, как удаленные).
+        Выполняет "Soft delete" строк отчета.
 
-        Устанавливает флаг "is_deleted" = True. Физически строки не удаляются.
+        Устанавливает флаг "is_deleted" = True для всех строк отчета report_id. Физически строки не удаляются.
 
         Args:
             report_id (int): Идентификатор отчёта для пометки строк, как удалённых.
