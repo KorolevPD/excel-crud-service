@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from app.clients.db.models import ControllerBase
-from app.clients.db.table_report_model import TableReport, TableReportRow
+from app.clients.db.table_report_model import TableReport
 from app.clients.db.table_report_repository import TableReportRepository
 from app.config.settings import settings
 
