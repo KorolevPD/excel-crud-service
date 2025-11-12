@@ -124,3 +124,162 @@ class TableReportRepository:
             await self.session.rollback()
             logger.exception("Ошибка при удалении отчета")
             raise
+
+    # --- ROWS ---
+
+    async def create_rows(self, report_id: int, rows: List[Dict[str, Any]], unique_column: str) -> None:
+        """
+        Производит массовое создание строк.
+
+        Args:
+            report_id (int): Идентификатор отчёта для создания строк.
+            rows (List[Dict[str, Any]]): Список строк.
+            unique_column (str): Имя столбца для определения уникальности строки. Должен присутствовать
+                в параметре rows.
+
+        Returns:
+            None
+        """
+        try:
+            new_rows = []
+            for row_data in rows:
+                new_row = TableReportRow(
+                    report_id=report_id,
+                    unique_value=row_data[unique_column],
+                )
+                new_row.values = [TableReportValue(column_name=k, value=str(v)) for k, v in row_data.items()]
+                new_rows.append(new_row)
+
+            self.session.add_all(new_rows)
+            await self.session.commit()
+
+        except Exception:
+            await self.session.rollback()
+            logger.exception("Ошибка при массовом создании строк")
+            raise
+
+    async def get_rows(self, report_id: int, limit: int, offset: int) -> List[TableReportRow]:
+        """
+        Получение строк отчета с пагинацией и загрузкой связанных значений.
+
+        Args:
+            report_id (int): Идентификатор отчёта, строки которого нужно получить.
+            limit (int): Максимальное количество строк для выборки.
+            offset (int): Смещение для пагинации.
+
+        Returns:
+            List[TableReportRow]: Список строк отчета с загруженными значениями.
+        """
+        try:
+            stmt = (
+                select(TableReportRow)
+                .where(TableReportRow.report_id == report_id)
+                .options(selectinload(TableReportRow.values))
+                .limit(limit)
+                .offset(offset)
+            )
+            result = await self.session.execute(stmt)
+            rows = list(result.scalars().all())
+            return rows
+        except Exception:
+            logger.exception("Ошибка при получении строк отчета")
+            raise
+
+    async def get_all_rows(self, report_id: int) -> List[TableReportRow]:
+        """
+        Получение всех строк отчета с загрузкой связанных значений.
+
+        Args:
+            report_id (int): Идентификатор отчёта, строки которого нужно получить.
+
+        Returns:
+            List[TableReportRow]: Список всех строк отчета с загруженными значениями.
+        """
+        try:
+            stmt = (
+                select(TableReportRow)
+                .where(TableReportRow.report_id == report_id)
+                .options(selectinload(TableReportRow.values))
+            )
+            result = await self.session.execute(stmt)
+            rows = list(result.scalars().all())
+            return rows
+        except Exception:
+            logger.exception("Ошибка при получении всех строк отчета")
+            raise
+
+    async def get_rows_by_unique_value(self, report_id: int, unique_values: List[str]) -> List[TableReportRow]:
+        """
+        Получение строк отчета по списку уникальных значений.
+
+        Args:
+            report_id (int): Идентификатор отчёта, строки которого нужно получить.
+            unique_values (List[str]): Список значений уникального столбца.
+
+        Returns:
+            List[TableReportRow]: Список строк отчета с загруженными значениями.
+        """
+        if not unique_values:
+            return []
+
+        try:
+            stmt = (
+                select(TableReportRow)
+                .where(
+                    TableReportRow.report_id == report_id,
+                    TableReportRow.unique_value.in_(unique_values),
+                    TableReportRow.is_deleted == False,  # noqa: E712
+                )
+                .options(selectinload(TableReportRow.values))
+            )
+            result = await self.session.execute(stmt)
+            rows = list(result.scalars().all())
+            return rows
+        except Exception:
+            logger.exception("Ошибка при получении строк по уникальным значениям")
+            raise
+
+    async def get_row_values(self, row_id: int) -> Dict[str, Any]:
+        """
+        Получение всех значений строки в виде словаря {column_name: value}.
+
+        Args:
+            row_id (int): Идентификатор строки, значения которой нужно получить.
+
+        Returns:
+            Dict[str, Any]: Список значений строки.
+        """
+        try:
+            stmt = select(TableReportValue).where(TableReportValue.row_id == row_id)
+            result = await self.session.execute(stmt)
+            return {v.column_name: v.value for v in result.scalars().all()}
+        except Exception:
+            logger.exception("Ошибка при получении значений строки")
+            raise
+
+    async def get_column_values(self, report_id: int, column_name: str) -> List[Any]:
+        """
+        Получение всех значений столбца.
+
+        Args:
+            report_id (int): Идентификатор отчёта, где находится колонка.
+            column_name (str): Название колонки из которой нужно получить значения.
+        Returns:
+            List[Any]: Значения столбца.
+        """
+        try:
+            stmt = (
+                select(TableReportValue.value)
+                .join(TableReportRow)
+                .where(
+                    TableReportRow.report_id == report_id,
+                    TableReportRow.is_deleted == False,  # noqa: E712
+                    TableReportValue.column_name == column_name,
+                )
+            )
+            result = await self.session.execute(stmt)
+            return [row[0] for row in result.all()]
+        except Exception:
+            logger.exception("Ошибка при получении значений столбца")
+            raise
+
