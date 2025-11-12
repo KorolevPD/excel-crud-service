@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func, false
+from sqlalchemy.sql import false, func
 
 from app.clients.db.models import ControllerBase
 
@@ -15,17 +15,17 @@ class TableReport(ControllerBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
-        default=func.now(),
+        server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
     )
     user_id: Mapped[str] = mapped_column(String(255), nullable=False)
     template_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     columns_metadata: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False)
-    total_rows: Mapped[int] = mapped_column(Integer, nullable=False, default="0")
+    total_rows: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     additional_params: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=True)
 
     rows: Mapped[List["TableReportRow"]] = relationship(
@@ -55,14 +55,14 @@ class TableReportRow(ControllerBase):
         index=True,
     )
     unique_value: Mapped[str] = mapped_column(String(255), nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
-        default=func.now(),
+        server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
     )
-    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=false())
+    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
 
     report: Mapped[TableReport] = relationship("TableReport", back_populates="rows")
     values: Mapped[List["TableReportValue"]] = relationship(
@@ -91,10 +91,10 @@ class TableReportValue(ControllerBase):
     )
     column_name: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
-        default=func.now(),
+        server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
     )
