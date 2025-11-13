@@ -10,16 +10,18 @@ class TableReportCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255, description="Название отчета")
     user_id: str = Field(min_length=1, max_length=255, description="Идентификатор пользователя")
     columns_metadata: Dict[str, Any] = Field(description="Метаданные столбцов отчета (название и тип)")
-    file_path: Optional[str] = Field(None, description="Путь к загруженному файлу отчета")
+    file_path: str = Field(pattern=r"(?i).*\.(xls|xlsx)$", description="Путь к загруженному файлу отчета")
 
 
 class TableReportUpdateRequest(BaseModel):
     """Запрос на обновление существующего табличного отчета."""
 
-    name: Optional[str] = Field(None, description="Новое имя отчета")
-    mode: Optional[str] = Field(None, description="Режим обновления данных (replace, append)")
-    unique_column: Optional[str] = Field(None, description="Название уникального столбца для строк")
-    file_path: Optional[str] = Field(None, description="Путь к файлу для обновления данных")
+    name: Optional[str] = Field(default=None, description="Новое имя отчета")
+    mode: Optional[str] = Field(default=None, description="Режим обновления данных (replace, append)")
+    unique_column: Optional[str] = Field(default=None, description="Название уникального столбца для строк")
+    file_path: Optional[str] = Field(
+        default=None, pattern=r"(?i).*\.(xls|xlsx)$", description="Путь к файлу для обновления данных"
+    )
 
 
 class TableReportResponse(BaseModel):
@@ -71,7 +73,7 @@ class TableReportListResponse(BaseModel):
 class TableReportListQuery(BaseModel):
     """Параметры запроса списка отчетов."""
 
-    user_id: Optional[str] = Field(None, description="Фильтр по пользователю")
-    search: Optional[str] = Field(None, description="Поиск по названию")
-    limit: int = Field(50, ge=1, le=500, description="Количество записей на странице")
-    offset: int = Field(0, ge=0, description="Смещение для пагинации")
+    user_id: Optional[str] = Field(default=None, description="Фильтр по пользователю")
+    search: Optional[str] = Field(default=None, description="Поиск по названию")
+    limit: int = Field(default=50, ge=1, le=500, description="Количество записей на странице")
+    offset: int = Field(default=0, ge=0, description="Смещение для пагинации")
