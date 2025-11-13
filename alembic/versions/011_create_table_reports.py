@@ -71,7 +71,7 @@ def upgrade() -> None:
 
     op.create_table(
         "table_report_values",
-        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column(
             "row_id",
             sa.Integer(),

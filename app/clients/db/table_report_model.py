@@ -82,7 +82,7 @@ class TableReportValue(ControllerBase):
     __tablename__ = "table_report_values"
     __table_args__ = (UniqueConstraint("row_id", "column_name", name="uq_table_report_values_row_id_column_name"),)
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     row_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("controller.table_report_rows.id", ondelete="CASCADE"),
