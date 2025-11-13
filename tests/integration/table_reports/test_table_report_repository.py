@@ -7,8 +7,9 @@ import pytest
 from app.clients.db.table_report_model import TableReport, TableReportRow
 from app.clients.db.table_report_repository import TableReportRepository
 
+pytestmark = pytest.mark.asyncio
 
-@pytest.mark.asyncio
+
 async def test_create_report(repo: TableReportRepository, table_report: TableReport) -> None:
     created = await repo.create(table_report)
 
@@ -19,7 +20,6 @@ async def test_create_report(repo: TableReportRepository, table_report: TableRep
     assert created.total_rows == table_report.total_rows
 
 
-@pytest.mark.asyncio
 async def test_get_report(repo: TableReportRepository, table_report: TableReport) -> None:
     created = await repo.create(table_report)
     fetched = await repo.get_by_id(created.id)
@@ -30,14 +30,12 @@ async def test_get_report(repo: TableReportRepository, table_report: TableReport
     assert fetched.name == created.name
 
 
-@pytest.mark.asyncio
 async def test_get_non_existent_report(repo: TableReportRepository) -> None:
     non_existent = await repo.get_by_id(1)
 
     assert non_existent is None
 
 
-@pytest.mark.asyncio
 async def test_update_report(repo: TableReportRepository, table_report: TableReport) -> None:
     created = await repo.create(table_report)
     old_updated_at = created.updated_at
@@ -52,7 +50,6 @@ async def test_update_report(repo: TableReportRepository, table_report: TableRep
     assert updated.updated_at > old_updated_at
 
 
-@pytest.mark.asyncio
 async def test_delete_report(repo: TableReportRepository, table_report: TableReport) -> None:
     created = await repo.create(table_report)
 
@@ -67,7 +64,6 @@ async def test_delete_report(repo: TableReportRepository, table_report: TableRep
     assert created_rows[0].is_deleted is True
 
 
-@pytest.mark.asyncio
 async def test_create_report_db_error(
     repo: TableReportRepository, table_report: TableReport, caplog: LogCaptureFixture
 ) -> None:
