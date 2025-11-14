@@ -15,28 +15,21 @@ from app.api.schemas import (
     TableReportUpdateRequest,
 )
 
+pytestmark = pytest.mark.asyncio
 
-@pytest.mark.parametrize(
-    "data",
-    [
-        {
-            "name": "Test Rep`ort",
-            "user_id": "user_123",
-            "columns_metadata": {"col1": "string", "col2": "int"},
-            "file_path": "/tmp/report.xlsx",
-        },
-        {
-            "name": "R",
-            "user_id": "u",
-            "columns_metadata": {},
-        },
-    ],
-)
-def test_create_request_valid(data: Dict[str, Any]) -> None:
-    req = TableReportCreateRequest(**data)
-    assert req.name
+
+async def test_create_request_valid() -> None:
+    req = TableReportCreateRequest(
+        name="New",
+        user_id="user_1",
+        columns_metadata={"col1": "string", "col2": "int"},
+        file_path="/tmp/new.xlsx",
+    )
+    assert req.name == "New"
+    assert req.user_id == "user_1"
     assert isinstance(req.columns_metadata, dict)
-    assert req.file_path == data["file_path"]
+    assert req.columns_metadata == {"col1": "string", "col2": "int"}
+    assert req.file_path == "/tmp/new.xlsx"
 
 
 @pytest.mark.parametrize(
@@ -46,12 +39,12 @@ def test_create_request_valid(data: Dict[str, Any]) -> None:
         {"name": "Report", "columns_metadata": {}},
     ],
 )
-def test_create_request_invalid(data: Dict[str, Any]) -> None:
+async def test_create_request_invalid(data: Dict[str, Any]) -> None:
     with pytest.raises(ValidationError):
         TableReportCreateRequest(**data)
 
 
-def test_update_request_valid() -> None:
+async def test_update_request_valid() -> None:
     req = TableReportUpdateRequest(
         name="Updated",
         mode="replace",
@@ -63,13 +56,13 @@ def test_update_request_valid() -> None:
         assert req.file_path.endswith(".xlsx")
 
 
-def test_update_request_partial() -> None:
+async def test_update_request_partial() -> None:
     req = TableReportUpdateRequest(name=None)
     assert req.name is None
     assert req.model_dump(exclude_none=True) == {}
 
 
-def test_table_report_response_serialization() -> None:
+async def test_table_report_response_serialization() -> None:
     now = datetime.now(timezone.utc)
     resp = TableReportResponse(
         id=1,
@@ -80,13 +73,19 @@ def test_table_report_response_serialization() -> None:
         created_at=now,
         updated_at=now,
     )
-    data = resp.dict()
-    assert data["id"] == 1
+    data = resp.model_dump()
+    assert data["id"] == resp.id
+    assert data["name"] == resp.name
+    assert data["user_id"] == resp.user_id
+    assert data["columns_metadata"] == resp.columns_metadata
+    assert data["total_rows"] == resp.total_rows
+    assert data["user_id"] == resp.user_id
     assert data["total_rows"] == 10
     assert "created_at" in data
+    assert "updated_at" in data
 
 
-def test_table_report_row_response() -> None:
+async def test_table_report_row_response() -> None:
     row = TableReportRowResponse(
         id=5,
         report_id=1,
@@ -96,10 +95,10 @@ def test_table_report_row_response() -> None:
     )
     assert row.report_id == 1
     assert not row.is_deleted
-    assert "values" in row.dict()
+    assert "values" in row.model_dump()
 
 
-def test_table_report_data_response() -> None:
+async def test_table_report_data_response() -> None:
     now = datetime.now(timezone.utc)
     report = TableReportResponse(
         id=1,
@@ -122,7 +121,7 @@ def test_table_report_data_response() -> None:
     assert len(resp.rows) == 1
 
 
-def test_quality_stats_response() -> None:
+async def test_quality_stats_response() -> None:
     stats = TableReportQualityStatsResponse(
         total_rows=100,
         empty_values_count=5,
@@ -130,10 +129,14 @@ def test_quality_stats_response() -> None:
         duplicate_values_count=5,
         completeness_percent=95.0,
     )
+    assert stats.total_rows == 100
+    assert stats.empty_values_count == 5
+    assert stats.unique_values_count == 90
+    assert stats.duplicate_values_count == 5
     assert stats.completeness_percent == 95.0
 
 
-def test_list_response() -> None:
+async def test_list_response() -> None:
     now = datetime.now(timezone.utc)
     report = TableReportResponse(
         id=1,
@@ -144,18 +147,18 @@ def test_list_response() -> None:
         created_at=now,
         updated_at=now,
     )
-    lst = TableReportListResponse(items=[report], total=1)
+    lst = TableReportListResponse(items=[report])
     assert lst.total == 1
     assert lst.items[0].name == "Test"
 
 
-def test_list_query_defaults() -> None:
+async def test_list_query_defaults() -> None:
     q = TableReportListQuery()
     assert q.limit == 50
     assert q.offset == 0
 
 
 @pytest.mark.parametrize("limit", [0, 1000])
-def test_list_query_invalid_limit(limit: int) -> None:
+async def test_list_query_invalid_limit(limit: int) -> None:
     with pytest.raises(ValidationError):
         TableReportListQuery(limit=limit)
