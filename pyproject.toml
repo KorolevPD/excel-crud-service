@@ -18,7 +18,9 @@ dependencies = [
     "alembic (>=1.17.1,<2.0.0)",
     "pydantic (>=2.12.4,<3.0.0)",
     "pydantic-settings (>=2.12.0,<3.0.0)",
-    "python-dotenv (>=1.2.1,<2.0.0)"
+    "python-dotenv (>=1.2.1,<2.0.0)",
+    "pandas-stubs (>=2.3.2.250926,<3.0.0.0)",
+    "types-openpyxl (>=3.1.5.20250919,<4.0.0.0)",
 ]
 
 [tool.poetry.group.dev.dependencies]
