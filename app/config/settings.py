@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     DATABASE_URL_ASYNC: str = ""
     ENV: str = "dev"
     DEBUG: bool = True
+    MAX_ROWS_PER_BATCH: int = 10000
 
     class Config:
         env_file = ".env"
