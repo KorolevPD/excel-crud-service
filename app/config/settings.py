@@ -1,4 +1,4 @@
-from pydantic import ValidationError
+from pydantic import ValidationError, Field
 from pydantic_settings import BaseSettings
 
 
@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     DATABASE_URL_ASYNC: str = ""
     ENV: str = "dev"
     DEBUG: bool = True
-    MAX_ROWS_PER_BATCH: int = 10000
+    MAX_ROWS_PER_BATCH: int = Field(default=10000, ge=5000)
 
     class Config:
         env_file = ".env"
