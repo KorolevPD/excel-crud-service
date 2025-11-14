@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 class TableReportCreateRequest(BaseModel):
@@ -67,7 +67,11 @@ class TableReportListResponse(BaseModel):
     """Ответ со списком отчетов."""
 
     items: List[TableReportResponse] = Field(description="Список отчетов")
-    total: int = Field(description="Общее количество отчетов")
+
+    @computed_field  # type: ignore
+    @property
+    def total(self) -> int:
+        return len(self.items)
 
 
 class TableReportListQuery(BaseModel):
