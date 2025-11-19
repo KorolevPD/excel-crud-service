@@ -198,7 +198,10 @@ class TableReportRepository:
         try:
             stmt = (
                 select(TableReportRow)
-                .where(TableReportRow.report_id == report_id)
+                .where(
+                    TableReportRow.report_id == report_id,
+                    TableReportRow.is_deleted == False,  # noqa: E712
+                )
                 .options(selectinload(TableReportRow.values))
             )
             result = await self.session.execute(stmt)
