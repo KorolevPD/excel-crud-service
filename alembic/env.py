@@ -58,7 +58,6 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             include_schemas=True,
-            version_table_schema="controller",
         )
 
         with context.begin_transaction():

@@ -25,6 +25,8 @@ def upgrade() -> None:
 
     schema = "controller"
 
+    op.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+
     op.create_table(
         "table_reports",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
