@@ -22,20 +22,17 @@ async def test_create_request_valid() -> None:
     req = TableReportCreateRequest(
         name="New",
         user_id="user_1",
-        columns_metadata={"col1": "string", "col2": "int"},
-        file_path="/tmp/new.xlsx",
+        unique_column="col",
     )
     assert req.name == "New"
     assert req.user_id == "user_1"
-    assert isinstance(req.columns_metadata, dict)
-    assert req.columns_metadata == {"col1": "string", "col2": "int"}
-    assert req.file_path == "/tmp/new.xlsx"
+    assert req.unique_column == "col"
 
 
 @pytest.mark.parametrize(
     "data",
     [
-        {"name": "", "user_id": "123", "columns_metadata": {}},
+        {"name": "", "user_id": "123", "unique_column": {}},
         {"name": "Report", "columns_metadata": {}},
     ],
 )
@@ -46,20 +43,13 @@ async def test_create_request_invalid(data: Dict[str, Any]) -> None:
 
 async def test_update_request_valid() -> None:
     req = TableReportUpdateRequest(
-        name="Updated",
-        mode="replace",
+        report_id=1,
+        update_mode="replace",
         unique_column="id",
-        file_path="/tmp/new.xlsx",
     )
-    assert req.mode == "replace"
-    if req.file_path:
-        assert req.file_path.endswith(".xlsx")
-
-
-async def test_update_request_partial() -> None:
-    req = TableReportUpdateRequest(name=None)
-    assert req.name is None
-    assert req.model_dump(exclude_none=True) == {}
+    assert req.report_id == 1
+    assert req.update_mode == "replace"
+    assert req.unique_column == "id"
 
 
 async def test_table_report_response_serialization() -> None:
@@ -123,17 +113,35 @@ async def test_table_report_data_response() -> None:
 
 async def test_quality_stats_response() -> None:
     stats = TableReportQualityStatsResponse(
-        total_rows=100,
-        empty_values_count=5,
-        unique_values_count=90,
-        duplicate_values_count=5,
-        completeness_percent=95.0,
+        rows={
+            "new": 0,
+            "updated": 0,
+            "deleted": 0,
+        },
+        empty_values={
+            "total": {
+                "id": 0,
+                "value": 0,
+            },
+            "new": {
+                "id": 0,
+                "value": 0,
+            },
+        },
+        unique_values={
+            "total": {
+                "id": 2,
+                "value": 2,
+            },
+            "new": {
+                "id": 0,
+                "value": 0,
+            },
+        },
     )
-    assert stats.total_rows == 100
-    assert stats.empty_values_count == 5
-    assert stats.unique_values_count == 90
-    assert stats.duplicate_values_count == 5
-    assert stats.completeness_percent == 95.0
+    assert isinstance(stats.rows, dict)
+    assert isinstance(stats.empty_values, dict)
+    assert isinstance(stats.unique_values, dict)
 
 
 async def test_list_response() -> None:

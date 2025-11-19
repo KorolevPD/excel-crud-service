@@ -31,7 +31,7 @@ async def test_get_report(repo: TableReportRepository, table_report: TableReport
 
 
 async def test_get_non_existent_report(repo: TableReportRepository) -> None:
-    non_existent = await repo.get_by_id(1)
+    non_existent = await repo.get_by_id(0)
 
     assert non_existent is None
 
@@ -55,13 +55,15 @@ async def test_delete_report(repo: TableReportRepository, table_report: TableRep
 
     rows = [{"test_column": "str"}]
     await repo.create_rows(created.id, rows, "test_column")
-    await repo.delete(created.id)
-
     created_rows = await repo.get_all_rows(created.id)
-
     assert len(created_rows) == 1
     assert isinstance(created_rows[0], TableReportRow)
-    assert created_rows[0].is_deleted is True
+    assert created_rows[0].is_deleted is False
+
+    await repo.delete(created.id)
+
+    deleted_rows = await repo.get_all_rows(created.id)
+    assert len(deleted_rows) == 0
 
 
 async def test_create_report_db_error(

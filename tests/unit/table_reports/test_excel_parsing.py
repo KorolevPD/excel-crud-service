@@ -3,7 +3,6 @@ from zipfile import BadZipFile
 
 import pandas as pd
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
 from app.services.table_report_crud_service import TableReportService
@@ -82,8 +81,7 @@ def large_excel_file(tmp_path: Path) -> Path:
     return file_path
 
 
-async def test_parse_valid_excel_file(async_session: AsyncSession, valid_excel_file: Path) -> None:
-    service = TableReportService(async_session)
+async def test_parse_valid_excel_file(service: TableReportService, valid_excel_file: Path) -> None:
     rows, metadata = await service._parse_excel_file(valid_excel_file.absolute().as_posix())
 
     assert isinstance(rows, list)
@@ -91,16 +89,14 @@ async def test_parse_valid_excel_file(async_session: AsyncSession, valid_excel_f
     assert "Integer" in metadata
 
 
-async def test_parse_excel_with_empty_cells(async_session: AsyncSession, excel_with_empty_cells: Path) -> None:
-    service = TableReportService(async_session)
+async def test_parse_excel_with_empty_cells(service: TableReportService, excel_with_empty_cells: Path) -> None:
     rows, metadata = await service._parse_excel_file(excel_with_empty_cells.absolute().as_posix())
 
     assert len(rows) == 2
     assert any(row.get("Integer") == "" for row in rows)
 
 
-async def test_data_type_conversion(async_session: AsyncSession, valid_excel_file: Path) -> None:
-    service = TableReportService(async_session)
+async def test_data_type_conversion(service: TableReportService, valid_excel_file: Path) -> None:
     rows, _ = await service._parse_excel_file(valid_excel_file.absolute().as_posix())
     first_row = rows[0]
 
@@ -113,18 +109,16 @@ async def test_data_type_conversion(async_session: AsyncSession, valid_excel_fil
     assert first_row["Date"] == "2024-01-01 00:00:00"
 
 
-async def test_invalid_file_format(async_session: AsyncSession, invalid_files_path: Path) -> None:
+async def test_invalid_file_format(service: TableReportService, invalid_files_path: Path) -> None:
     txt_file = invalid_files_path / "invalid.txt"
     xlsx_file = invalid_files_path / "invalid.xlsx"
-    service = TableReportService(async_session)
     with pytest.raises(ValueError):
         await service._validate_excel_file(txt_file.absolute().as_posix())
     with pytest.raises(BadZipFile):
         await service._validate_excel_file(xlsx_file.absolute().as_posix())
 
 
-async def test_extract_columns_metadata(async_session: AsyncSession) -> None:
-    service = TableReportService(async_session)
+async def test_extract_columns_metadata(service: TableReportService) -> None:
     df = pd.DataFrame(
         {
             "id": [1, 2],
@@ -143,8 +137,7 @@ async def test_extract_columns_metadata(async_session: AsyncSession) -> None:
     assert metadata["date"] == "datetime"
 
 
-async def test_large_excel_file_parsing(async_session: AsyncSession, large_excel_file: Path) -> None:
-    service = TableReportService(async_session)
+async def test_large_excel_file_parsing(service: TableReportService, large_excel_file: Path) -> None:
     rows, metadata = await service._parse_excel_file(large_excel_file.absolute().as_posix())
 
     assert len(rows) == LARGE_FILE_ROW
