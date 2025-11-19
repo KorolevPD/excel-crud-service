@@ -1,42 +1,43 @@
 from io import BytesIO
-from app.clients.db.table_report_repository import TableReportRepository
-from app.clients.db.table_report_model import TableReport, TableReportRow
-from zipfile import BadZipFile
 import logging
 import os
-from typing import Any, Dict, List, Tuple, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
+from zipfile import BadZipFile
 
 from openpyxl.utils.exceptions import InvalidFileException
 import pandas as pd
 
+from app.clients.db.sessions import session
+from app.clients.db.table_report_model import TableReport, TableReportRow
+from app.clients.db.table_report_repository import TableReportRepository
 from app.config.settings import settings
+from app.exceptions import NotFoundError
 
 logger = logging.getLogger(__name__)
 
 
-class NotFoundError(LookupError):
-    pass
-
-
-class TableReportService():
+class TableReportService:
     """Сервис для работы с табличными отчётами."""
 
     SUPPORTED_FORMATS: Tuple[str, str] = (".xlsx", ".xls")
 
     repo: TableReportRepository
 
-    def __init__(self, repository: TableReportRepository) -> None:
-        self.repo = repository
+    def get_repository(self) -> TableReportRepository:
+        return TableReportRepository(session)
+
+    def __init__(self, repository: Optional[TableReportRepository] = None) -> None:
+        if repository is not None:
+            self.repo = repository
+        self.repo = self.get_repository()
 
     async def create_report_from_excel(
-            self, file_path: str, name: str, user_id: str, **kwargs: str) -> TableReport:
+        self, file_path: str, name: str, user_id: str, unique_column: str
+    ) -> TableReport:
         """
         Создание отчёта на основе Excel файла.
         """
         rows, columns_metadata = await self._parse_excel_file(file_path)
-
-        unique_column = kwargs.get(
-            "unique_column", list(columns_metadata.keys())[0])
 
         await self._validate_unique_column(unique_column, columns_metadata)
 
@@ -44,12 +45,9 @@ class TableReportService():
             name=name,
             user_id=user_id,
             columns_metadata=columns_metadata,
-            unique_column=unique_column,
-            **kwargs
+            total_rows=len(rows),
         )
-
         report = await self.repo.create(report)
-
         await self.repo.create_rows(report.id, rows, unique_column)
 
         return report
@@ -88,29 +86,30 @@ class TableReportService():
     async def get_report_as_json(self, report_id: int, limit: int, offset: int) -> Dict[str, Any]:
         """Пагинированный JSON отчёта."""
 
+        report = await self.repo.get_by_id(report_id)
         rows = await self.repo.get_rows(report_id, limit, offset)
 
         parsed = []
         for row in rows:
-            parsed.append({
-                "id": row.id,
-                "unique_value": row.unique_value,
-                "values": {v.column_name: v.value for v in row.values},
-            })
+            parsed.append(
+                {
+                    "id": row.id,
+                    "report_id": row.report_id,
+                    "unique_value": row.unique_value,
+                    "is_deleted": row.is_deleted,
+                    "values": {v.column_name: v.value for v in row.values},
+                }
+            )
 
         return {
+            "report": report,
+            "rows": parsed,
             "limit": limit,
             "offset": offset,
-            "count": len(parsed),
-            "rows": parsed,
         }
 
     async def update_report_from_excel(
-        self,
-        report_id: int,
-        file_path: str,
-        update_mode: str,
-        unique_column: str
+        self, report_id: int, file_path: str, update_mode: str, unique_column: str
     ) -> Dict[str, Any]:
         """
         Обновляет отчёт новыми данными из Excel-файла.
@@ -127,9 +126,9 @@ class TableReportService():
         if update_mode == "replace":
             old_rows = await self.repo.get_all_rows(report_id)
             new, updated, deleted = await self._compare_rows_by_unique_column(old_rows, new_rows, unique_column)
-            quality_stats = await self.calculate_quality_stats(report_id, new, updated, deleted, unique_column)
+            # quality_stats = await self.calculate_quality_stats(report_id, new, updated, deleted)
             await self.repo.replace_rows(report_id, new_rows, unique_column)
-            return {"new": new, "updated": updated, "deleted": deleted, "quality_stats": quality_stats}
+            return {"new": new, "updated": updated, "deleted": deleted}  # , "quality_stats": quality_stats}
 
         elif update_mode == "append":
             new = await self.repo.append_rows(report_id, new_rows, unique_column)
@@ -140,6 +139,57 @@ class TableReportService():
 
     async def delete_report(self, report_id: int) -> None:
         await self.repo.delete(report_id)
+
+    async def calculate_quality_stats(
+        self,
+        report_id: int,
+        new_rows: List[Dict[str, str]],
+        updated_rows: List[Dict[str, str]],
+        deleted_rows: List[Dict[str, str]],
+    ) -> Dict[str, Any]:
+
+        report = await self.repo.get_by_id(report_id)
+        if not report:
+            raise NotFoundError(f"TableReport с id={report_id} не найден")
+
+        new_count = len(new_rows)
+        updated_count = len(updated_rows)
+        deleted_count = len(deleted_rows)
+
+        all_columns = report.columns_metadata.keys()
+
+        empty_total = {col: await self.repo.count_empty_values(report.id, col) for col in all_columns}
+        empty_new = {col: 0 for col in all_columns}
+
+        for row in new_rows:
+            for col, val in row.items():
+                if val == "":
+                    empty_new[col] += 1
+
+        unique_total = {col: await self.repo.count_unique_values(report.id, col) for col in all_columns}
+        unique_new: Dict[str, Set[str]] = {col: set() for col in all_columns}
+
+        for row in new_rows:
+            for col, val in row.items():
+                unique_new[col].add(val)
+
+        unique_new_count = {col: len(values) for col, values in unique_new.items()}
+
+        return {
+            "rows": {
+                "new": new_count,
+                "updated": updated_count,
+                "deleted": deleted_count,
+            },
+            "empty_values": {
+                "total": empty_total,
+                "new": empty_new,
+            },
+            "unique_values": {
+                "total": unique_total,
+                "new": unique_new_count,
+            },
+        }
 
     async def _validate_excel_file(self, file_path: str) -> None:
         """
@@ -159,7 +209,11 @@ class TableReportService():
 
         try:
             df = pd.read_excel(file_path, engine="openpyxl", nrows=1)
-        except (FileNotFoundError, InvalidFileException, ValueError, ):
+        except (
+            FileNotFoundError,
+            InvalidFileException,
+            ValueError,
+        ):
             logger.exception("Ошибка при парсинге Excel файла")
             raise
         except BadZipFile:
@@ -228,10 +282,12 @@ class TableReportService():
                 new_items.append(incoming)
             else:
                 old_row = old_map[key]
-                updated_items.append({
-                    "id": str(old_row.id),
-                    **incoming,
-                })
+                updated_items.append(
+                    {
+                        "id": str(old_row.id),
+                        **incoming,
+                    }
+                )
 
         for key in old_map.keys():
             if key not in new_map:
@@ -280,8 +336,7 @@ class TableReportService():
             "datetime64[ns]": "datetime",
         }
 
-        metadata = {str(col): dtype_map.get(str(dtype), "unknown")
-                    for col, dtype in df.dtypes.items()}
+        metadata = {str(col): dtype_map.get(str(dtype), "unknown") for col, dtype in df.dtypes.items()}
         logger.debug(f"Извлечены метаданные столбцов: {metadata}")
         return metadata
 
@@ -304,59 +359,4 @@ class TableReportService():
         """Проверка, что колонка уникальности существует."""
 
         if unique_column not in columns_metadata:
-            raise ValueError(
-                f"Указанный уникальный столбец '{unique_column}' отсутствует в Excel. "
-                f"Доступные столбцы: {list(columns_metadata.keys())}"
-            )
-
-    async def calculate_quality_stats(
-            self,
-            report_id: int,
-            new_rows: List[Dict[str, str]],
-            updated_rows: List[Dict[str, str]],
-            deleted_rows: List[Dict[str, str]],
-            unique_column: str) -> Dict[str, Any]:
-
-        report = await self.repo.get_by_id(report_id)
-        if not report:
-            raise NotFoundError(f"TableReport с id={report_id} не найден")
-
-        new_count = len(new_rows)
-        updated_count = len(updated_rows)
-        deleted_count = len(deleted_rows)
-
-        all_columns = report.columns_metadata.keys()
-
-        empty_total = {col: await self.repo.count_empty_values(report.id, col) for col in all_columns}
-        empty_new = {col: 0 for col in all_columns}
-
-        for row in new_rows:
-            for col, val in row.items():
-                if val == "":
-                    empty_new[col] += 1
-
-        unique_total = {col: await self.repo.count_unique_values(report.id, col) for col in all_columns}
-        unique_new: Dict[str, Set[str]] = {col: set() for col in all_columns}
-
-        for row in new_rows:
-            for col, val in row.items():
-                unique_new[col].add(val)
-
-        unique_new_count = {col: len(values)
-                            for col, values in unique_new.items()}
-
-        return {
-            "rows": {
-                "new": new_count,
-                "updated": updated_count,
-                "deleted": deleted_count,
-            },
-            "empty_values": {
-                "total": empty_total,
-                "new": empty_new,
-            },
-            "unique_values": {
-                "total": unique_total,
-                "new": unique_new_count,
-            },
-        }
+            raise ValueError(f"Указанный уникальный столбец '{unique_column}' отсутствует в Excel.")
