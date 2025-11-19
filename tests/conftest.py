@@ -1,6 +1,7 @@
 from asyncio import AbstractEventLoop, get_event_loop_policy
 from collections.abc import AsyncGenerator, Generator
 
+import httpx
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
@@ -8,6 +9,8 @@ from app.clients.db.models import ControllerBase
 from app.clients.db.table_report_model import TableReport
 from app.clients.db.table_report_repository import TableReportRepository
 from app.config.settings import settings
+from app.main import app
+from app.services.table_report_crud_service import TableReportService
 
 
 @pytest.fixture(scope="session")
@@ -37,12 +40,17 @@ async def async_session(async_engine: AsyncEngine) -> AsyncGenerator[AsyncSessio
         await transaction.rollback()
 
 
-@pytest.fixture
+@pytest.fixture()
 async def repo(async_session: AsyncSession) -> TableReportRepository:
     return TableReportRepository(async_session)
 
 
-@pytest.fixture
+@pytest.fixture()
+def service(repo: TableReportRepository) -> TableReportService:
+    return TableReportService(repo)
+
+
+@pytest.fixture()
 async def table_report() -> TableReport:
     return TableReport(
         name="Report",
@@ -50,3 +58,19 @@ async def table_report() -> TableReport:
         columns_metadata={"col1": "string", "col2": "int"},
         total_rows=0,
     )
+
+
+@pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
+
+
+@pytest.fixture
+async def client() -> AsyncGenerator[httpx.AsyncClient]:
+    transport = httpx.ASGITransport(app=app)
+
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://test/api/v1",
+    ) as ac:
+        yield ac
