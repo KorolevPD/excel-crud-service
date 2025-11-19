@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -7,21 +7,43 @@ from pydantic import BaseModel, Field, computed_field
 class TableReportCreateRequest(BaseModel):
     """Запрос на создание нового табличного отчета."""
 
-    name: str = Field(min_length=1, max_length=255, description="Название отчета")
-    user_id: str = Field(min_length=1, max_length=255, description="Идентификатор пользователя")
-    columns_metadata: Dict[str, Any] = Field(description="Метаданные столбцов отчета (название и тип)")
-    file_path: str = Field(pattern=r"(?i).*\.(xls|xlsx)$", description="Путь к загруженному файлу отчета")
+    name: str = Field(min_length=1, max_length=255, description="Название отчета.")
+    user_id: str = Field(min_length=1, max_length=255, description="ID пользователя")
+    unique_column: str = Field(min_length=1, max_length=100, description="Имя колонки для уникального ключа")
+
+    model_config = {
+        "json_schema_extra": {"examples": [{"name": "Отчет №1", "user_id": "user_123", "unique_column": "id_column"}]}
+    }
 
 
 class TableReportUpdateRequest(BaseModel):
     """Запрос на обновление существующего табличного отчета."""
 
-    name: Optional[str] = Field(default=None, description="Новое имя отчета")
-    mode: Optional[str] = Field(default=None, description="Режим обновления данных (replace, append)")
-    unique_column: Optional[str] = Field(default=None, description="Название уникального столбца для строк")
-    file_path: Optional[str] = Field(
-        default=None, pattern=r"(?i).*\.(xls|xlsx)$", description="Путь к файлу для обновления данных"
-    )
+    report_id: int
+    update_mode: Literal["replace", "append"] = Field(description="Режим обновления данных (replace, append)")
+    unique_column: str = Field(description="Название уникального столбца для строк")
+
+
+class TableReportGetDataRequest(BaseModel):
+    """Запрос на создание нового табличного отчета."""
+
+    report_id: int
+    as_format: Literal["json", "excel"]
+    limit: int = Field(50)
+    offset: int = Field(0)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "report_id": 1,
+                    "as_format": "json",
+                    "limit": 5,
+                    "offset": 0,
+                }
+            ]
+        }
+    }
 
 
 class TableReportResponse(BaseModel):
@@ -49,6 +71,8 @@ class TableReportRowResponse(BaseModel):
 class TableReportDataResponse(BaseModel):
     """Ответ с данными отчета."""
 
+    limit: int = Field(default=50, ge=1, le=500, description="Количество записей на странице")
+    offset: int = Field(default=0, ge=0, description="Смещение для пагинации")
     report: TableReportResponse = Field(description="Метаданные отчета")
     rows: List[TableReportRowResponse] = Field(description="Список строк с данными")
 
@@ -56,11 +80,9 @@ class TableReportDataResponse(BaseModel):
 class TableReportQualityStatsResponse(BaseModel):
     """Ответ со статистикой качества данных."""
 
-    total_rows: int = Field(description="Общее количество строк")
-    empty_values_count: int = Field(description="Количество пустых значений")
-    unique_values_count: int = Field(description="Количество уникальных значений")
-    duplicate_values_count: int = Field(description="Количество дубликатов")
-    completeness_percent: float = Field(description="Процент заполненности данных")
+    rows: Dict[str, int]
+    empty_values: Dict[str, Any]
+    unique_values: Dict[str, Any]
 
 
 class TableReportListResponse(BaseModel):
@@ -78,6 +100,5 @@ class TableReportListQuery(BaseModel):
     """Параметры запроса списка отчетов."""
 
     user_id: Optional[str] = Field(default=None, description="Фильтр по пользователю")
-    search: Optional[str] = Field(default=None, description="Поиск по названию")
     limit: int = Field(default=50, ge=1, le=500, description="Количество записей на странице")
     offset: int = Field(default=0, ge=0, description="Смещение для пагинации")
