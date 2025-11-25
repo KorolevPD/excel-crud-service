@@ -45,7 +45,6 @@ class TableReportService:
             name=name,
             user_id=user_id,
             columns_metadata=columns_metadata,
-            total_rows=len(rows),
         )
         report = await self.repo.create(report)
         await self.repo.create_rows(report.id, rows, unique_column)
@@ -123,12 +122,17 @@ class TableReportService:
 
         await self._validate_unique_column(unique_column, columns_metadata)
 
+        report = await self.repo.get_by_id(report_id)
+        if not report:
+            raise NotFoundError(f"TableReport с id={report_id} не найден")
+        await self.repo.update(report, **{"columns_metadata": columns_metadata})
+
         if update_mode == "replace":
             old_rows = await self.repo.get_all_rows(report_id)
             new, updated, deleted = await self._compare_rows_by_unique_column(old_rows, new_rows, unique_column)
-            # quality_stats = await self.calculate_quality_stats(report_id, new, updated, deleted)
+            quality_stats = await self.calculate_quality_stats(report_id, new, updated, deleted)
             await self.repo.replace_rows(report_id, new_rows, unique_column)
-            return {"new": new, "updated": updated, "deleted": deleted}  # , "quality_stats": quality_stats}
+            return {"new": new, "updated": updated, "deleted": deleted, "quality_stats": quality_stats}
 
         elif update_mode == "append":
             new = await self.repo.append_rows(report_id, new_rows, unique_column)

@@ -19,7 +19,6 @@ class TableReportCreateRequest(BaseModel):
 class TableReportUpdateRequest(BaseModel):
     """Запрос на обновление существующего табличного отчета."""
 
-    report_id: int
     update_mode: Literal["replace", "append"] = Field(description="Режим обновления данных (replace, append)")
     unique_column: str = Field(description="Название уникального столбца для строк")
 

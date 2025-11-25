@@ -1,11 +1,16 @@
-from io import BytesIO
-import os
-import tempfile
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
-from fastapi.responses import StreamingResponse
 
+from app.api.handlers.table_report_handlers import (
+    create_table_report_handler,
+    delete_table_report_handler,
+    get_quality_stats_handler,
+    get_table_report_data_handler,
+    get_table_report_metadata_handler,
+    list_table_reports_handler,
+    update_table_report_handler,
+)
 from app.api.schemas import (
     TableReportCreateRequest,
     TableReportDataResponse,
@@ -19,11 +24,6 @@ from app.api.schemas import (
 from app.clients.db.table_report_model import TableReport
 from app.exceptions import NotFoundError, ValidationError
 from app.services.table_report_crud_service import TableReportService
-from app.use_cases.table_reports.create_table_report import CreateTableReportUseCase
-from app.use_cases.table_reports.delete_table_report import DeleteTableReportUseCase
-from app.use_cases.table_reports.get_quality_stats import GetQualityStatsUseCase
-from app.use_cases.table_reports.get_table_report import GetTableReportDataUseCase, GetTableReportUseCase
-from app.use_cases.table_reports.update_table_report import UpdateTableReportUseCase
 
 router = APIRouter()
 
@@ -45,15 +45,13 @@ async def create_table_report(
     service: TableReportService = Depends(get_table_report_service),
 ) -> TableReport:
     try:
-        tmp_file = await _save_report_file(file)
-
-        use_case = CreateTableReportUseCase(service)
-        result = await use_case.execute(file_path=tmp_file, **data.model_dump())
+        result = await create_table_report_handler(file, service, data)
         response.headers["Location"] = f"/table-reports/{result.id}"
         return result
-
     except ValidationError as e:
         raise HTTPException(422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(500, detail=str(e))
 
 
 @router.get("/table-reports/{report_id}", response_model=TableReportResponse, summary="Получение метаданных отчета")
@@ -62,9 +60,7 @@ async def get_table_report_metadata(
     service: TableReportService = Depends(get_table_report_service),
 ) -> TableReport:
     try:
-        use_case = GetTableReportUseCase(service)
-        result = await use_case.execute(report_id)
-        return result
+        return await get_table_report_metadata_handler(report_id, service)
     except NotFoundError as e:
         raise HTTPException(404, detail=str(e))
 
@@ -79,27 +75,7 @@ async def get_table_report_data(
     service: TableReportService = Depends(get_table_report_service),
 ) -> Any:
     try:
-        use_case = GetTableReportDataUseCase(service)
-
-        if data.as_format == "json":
-            result = await use_case.execute(**data.model_dump())
-            return result
-
-        elif data.as_format == "excel":
-            excel_bytes = await use_case.execute(data.report_id, "excel")
-            if isinstance(excel_bytes, bytes):
-                filename = f"report_{data.report_id}.xlsx"
-                return StreamingResponse(
-                    BytesIO(excel_bytes),
-                    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    headers={
-                        "Content-Disposition": f'attachment; filename="{filename}"',
-                        "Access-Control-Expose-Headers": "Content-Disposition",
-                    },
-                )
-
-        raise ValueError("Поддерживаемые форматы: Json или Excel")
-
+        return await get_table_report_data_handler(data, service)
     except NotFoundError as e:
         raise HTTPException(404, detail=str(e))
     except ValueError as e:
@@ -117,8 +93,7 @@ async def delete_table_report(
     service: TableReportService = Depends(get_table_report_service),
 ) -> Response:
     try:
-        use_case = DeleteTableReportUseCase(service)
-        await use_case.execute(report_id)
+        await delete_table_report_handler(report_id, service)
         return Response(status_code=204)
     except NotFoundError as e:
         raise HTTPException(404, detail=str(e))
@@ -126,16 +101,13 @@ async def delete_table_report(
 
 @router.put("/table-reports/{report_id}", response_model=dict, summary="Обновление отчета из Excel файла")
 async def update_table_report(
+    report_id: int,
     data: TableReportUpdateRequest = Depends(),
     file: UploadFile = File(..., description="Excel-файл (.xlsx или .xls)"),
     service: TableReportService = Depends(get_table_report_service),
 ) -> Dict[str, Any]:
     try:
-        tmp_file = await _save_report_file(file)
-        use_case = UpdateTableReportUseCase(service)
-
-        stats = await use_case.execute(file_path=tmp_file, **data.model_dump())
-        return stats
+        return await update_table_report_handler(report_id, file, service, data)
 
     except NotFoundError as e:
         raise HTTPException(404, detail=str(e))
@@ -153,8 +125,7 @@ async def get_quality_stats(
     service: TableReportService = Depends(get_table_report_service),
 ) -> Dict[str, Any]:
     try:
-        use_case = GetQualityStatsUseCase(service)
-        return await use_case.execute(report_id)
+        return await get_quality_stats_handler(report_id, service)
     except NotFoundError as e:
         raise HTTPException(404, detail=str(e))
 
@@ -165,16 +136,8 @@ async def get_quality_stats(
     summary="Список табличных отчётов с фильтрацией",
 )
 async def list_table_reports(
-    data: TableReportListQuery = Depends(), service: TableReportService = Depends(get_table_report_service)
+    data: TableReportListQuery = Depends(),
+    service: TableReportService = Depends(get_table_report_service)
 ) -> Dict[str, List[TableReport]]:
-    items = await service.repo.list_reports(**data.model_dump())
-
+    items = await list_table_reports_handler(data, service)
     return {"items": items}
-
-
-async def _save_report_file(file: UploadFile) -> str:
-    suffix = os.path.splitext(str(file.filename))[1]
-    fd, path = tempfile.mkstemp(suffix=suffix)
-    with os.fdopen(fd, "wb") as tmp:
-        tmp.write(await file.read())
-    return path

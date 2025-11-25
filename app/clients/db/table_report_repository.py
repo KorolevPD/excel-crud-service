@@ -151,6 +151,7 @@ class TableReportRepository:
                 new_rows.append(new_row)
 
             self.session.add_all(new_rows)
+            await self.update_report_total_rows(report_id)
             await self.session.commit()
 
         except Exception:
@@ -173,7 +174,7 @@ class TableReportRepository:
         try:
             stmt = (
                 select(TableReportRow)
-                .where(TableReportRow.report_id == report_id)
+                .where(TableReportRow.report_id == report_id, TableReportRow.is_deleted == False)  # noqa: E712
                 .options(selectinload(TableReportRow.values))
                 .limit(limit)
                 .offset(offset)
@@ -335,6 +336,7 @@ class TableReportRepository:
                     existing_row.is_deleted = True
                     deleted_rows.append({"unique_value": key})
 
+            await self.update_report_total_rows(report_id)
             await self.session.commit()
             return new_rows, updated_rows, deleted_rows
 
@@ -371,6 +373,7 @@ class TableReportRepository:
                     await self.session.flush()
                     new_rows.append({"id": new_row.id, **row_data})
 
+            await self.update_report_total_rows(report_id)
             await self.session.commit()
             return new_rows
         except Exception:
@@ -496,4 +499,23 @@ class TableReportRepository:
             return list(result.scalars().all())
         except Exception:
             logger.exception("Ошибка при получении списка отчетов")
+            raise
+
+    async def update_report_total_rows(self, report_id: int) -> None:
+        """
+        Обновление поля total_rows в отчете.
+
+        Args:
+            report_id (int): Идентификатор отчёта, для которого нужно обновить количество строк.
+        """
+        try:
+            report = await self.get_by_id(report_id)
+            if not report:
+                return
+            total_rows = await self.count_rows(report_id)
+            stmt = sa_update(TableReport).where(TableReport.id == report_id).values(total_rows=total_rows)
+            await self.session.execute(stmt)
+            await self.session.refresh(report)
+        except Exception:
+            logger.exception("Ошибка при обновлении количества строк отчета")
             raise
