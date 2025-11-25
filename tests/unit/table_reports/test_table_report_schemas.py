@@ -43,11 +43,9 @@ async def test_create_request_invalid(data: Dict[str, Any]) -> None:
 
 async def test_update_request_valid() -> None:
     req = TableReportUpdateRequest(
-        report_id=1,
         update_mode="replace",
         unique_column="id",
     )
-    assert req.report_id == 1
     assert req.update_mode == "replace"
     assert req.unique_column == "id"
 

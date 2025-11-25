@@ -134,3 +134,31 @@ async def test_row_diff_comparison(repo: TableReportRepository, saved_report: Ta
     assert {"B"} == {r["col1"] for r in updated}
     assert {"C"} == {r["col1"] for r in new}
     assert {"A"} == {r["unique_value"] for r in deleted}
+
+
+async def test_replace_rows_eav_integrity(
+        repo: TableReportRepository, saved_report: TableReport) -> None:
+    old_rows = [
+        {"col1": "K1", "col2": 1},
+        {"col1": "K2", "col2": 2},
+    ]
+    await repo.create_rows(saved_report.id, old_rows, "col1")
+
+    new_rows = [
+        {"col1": "K2", "col2": 200},
+        {"col1": "K3", "col2": 3},
+    ]
+    await repo.replace_rows(saved_report.id, new_rows, "col1")
+
+    rows_in_db = await repo.get_all_rows(saved_report.id)
+
+    grouped = {}
+    for r in rows_in_db:
+        grouped[r.unique_value] = {
+            v.column_name: v.value for v in r.values
+        }
+
+    assert "K1" not in grouped
+    assert grouped["K3"] == {"col1": "K3", "col2": "3"}
+    assert grouped["K2"] == {"col1": "K2", "col2": "200"}
+    assert set(grouped.keys()) == {"K2", "K3"}

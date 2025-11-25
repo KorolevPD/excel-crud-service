@@ -46,7 +46,7 @@ async def test_get_table_report_use_case(service: TableReportService, sample_exc
     get_uc = GetTableReportUseCase(service)
     data = await get_uc.execute(report.id)
     assert data.id == report.id
-    assert len(data.rows) == 0
+    assert len(data.rows) == 2
 
     with pytest.raises(NotFoundError):
         await get_uc.execute(9999)

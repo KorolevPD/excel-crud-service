@@ -56,7 +56,6 @@ async def table_report() -> TableReport:
         name="Report",
         user_id="user_1",
         columns_metadata={"col1": "string", "col2": "int"},
-        total_rows=0,
     )
 
 
