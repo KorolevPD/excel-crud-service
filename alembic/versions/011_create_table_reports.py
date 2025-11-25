@@ -81,8 +81,8 @@ def upgrade() -> None:
             nullable=False,
             index=True,
         ),
-        sa.Column("column_name", sa.String(length=100), nullable=False, index=True),
-        sa.Column("value", sa.Text(), nullable=False),
+        sa.Column("column_name", sa.String(length=255), nullable=False, index=True),
+        sa.Column("value", sa.Text()),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column(
             "updated_at",

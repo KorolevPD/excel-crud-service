@@ -89,8 +89,8 @@ class TableReportValue(ControllerBase):
         nullable=False,
         index=True,
     )
-    column_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    value: Mapped[str] = mapped_column(Text, nullable=False)
+    column_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    value: Mapped[str] = mapped_column(Text)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
