@@ -75,4 +75,4 @@ async def test_create_report_db_error(
     with pytest.raises(Exception):
         await repo.create(table_report)
 
-    assert "Ошибка при создании отчета" in caplog.text
+    assert "Ошибка создания отчета." in caplog.text

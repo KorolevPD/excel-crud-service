@@ -213,22 +213,22 @@ async def test_error_http_statuses(client: AsyncClient) -> None:
 
 
 async def test_create_report_with_arbitrary_columns(client: AsyncClient, tmp_path: Path) -> None:
-    df = pd.DataFrame({
-        "id": [101, 102],
-        "float": [99.90, 149.90],
-        "bool": [True, False],
-        "str": ["Первый товар", None],
-        "date": ["2024-01-01", "2025-12-31"]
-    })
+    df = pd.DataFrame(
+        {
+            "id": [101, 102],
+            "float": [99.90, 149.90],
+            "bool": [True, False],
+            "str": ["Первый товар", None],
+            "date": ["2024-01-01", "2025-12-31"],
+        }
+    )
     file_path = tmp_path / "arbitrary_cols.xlsx"
     df.to_excel(file_path, index=False)
 
     with open(file_path, "rb") as f:
         resp = await client.post(
             "/table-reports",
-            params={"name": "Test",
-                    "user_id": "user1",
-                    "unique_column": "id"},
+            params={"name": "Test", "user_id": "user1", "unique_column": "id"},
             files={"file": ("arbitrary.xlsx", f)},
         )
 
@@ -244,19 +244,18 @@ async def test_create_report_with_arbitrary_columns(client: AsyncClient, tmp_pat
 
 
 async def test_update_replace_full_data_integrity(client: AsyncClient, tmp_path: Path) -> None:
-    initial = pd.DataFrame({
-        "id": [1, 2, 3],
-        "name": ["Alice", "Bob", "Charlie"],
-        "score": [100, 200, 300],
-        "active": [True, False, True]
-    })
-    updated = pd.DataFrame({
-        "id": [2, 3, 4],
-        "name": ["BOB_UPDATED", "Charlie", "David"],
-        "score": [999, 300, 500],
-        "active": [True, True, False],
-        "new_col": ["extra", None, "yes"]
-    })
+    initial = pd.DataFrame(
+        {"id": [1, 2, 3], "name": ["Alice", "Bob", "Charlie"], "score": [100, 200, 300], "active": [True, False, True]}
+    )
+    updated = pd.DataFrame(
+        {
+            "id": [2, 3, 4],
+            "name": ["BOB_UPDATED", "Charlie", "David"],
+            "score": [999, 300, 500],
+            "active": [True, True, False],
+            "new_col": ["extra", None, "yes"],
+        }
+    )
 
     init_path = tmp_path / "init.xlsx"
     update_path = tmp_path / "update.xlsx"
@@ -267,7 +266,7 @@ async def test_update_replace_full_data_integrity(client: AsyncClient, tmp_path:
         resp = await client.post(
             "/table-reports",
             params={"name": "Integrity", "user_id": "u1", "unique_column": "id"},
-            files={"file": ("f.xlsx", f)}
+            files={"file": ("f.xlsx", f)},
         )
     report_id = resp.json()["id"]
 
@@ -291,16 +290,8 @@ async def test_update_replace_full_data_integrity(client: AsyncClient, tmp_path:
 
 
 async def test_quality_stats_after_real_update(client: AsyncClient, tmp_path: Path) -> None:
-    df1 = pd.DataFrame({
-        "code": ["A1", "A2", "A3"],
-        "price": [100, None, 300],
-        "category": ["X", "X", None]
-    })
-    df2 = pd.DataFrame({
-        "code": ["A1", "A3", "A4"],
-        "price": [150, 300, None],
-        "category": ["X", "Y", "Z"]
-    })
+    df1 = pd.DataFrame({"code": ["A1", "A2", "A3"], "price": [100, None, 300], "category": ["X", "X", None]})
+    df2 = pd.DataFrame({"code": ["A1", "A3", "A4"], "price": [150, 300, None], "category": ["X", "Y", "Z"]})
 
     p1 = tmp_path / "v1.xlsx"
     df1.to_excel(p1, index=False)
@@ -311,7 +302,7 @@ async def test_quality_stats_after_real_update(client: AsyncClient, tmp_path: Pa
         r = await client.post(
             "/table-reports",
             params={"name": "QualityFlow", "user_id": "u1", "unique_column": "code"},
-            files={"file": ("v1.xlsx", f)}
+            files={"file": ("v1.xlsx", f)},
         )
     rid = r.json()["id"]
 
@@ -332,8 +323,7 @@ async def test_export_excel_content_matches(client: AsyncClient, simple_excel_fi
     with open(simple_excel_file, "rb") as f:
         resp = await client.post(
             "/table-reports",
-            params={"name": "ExportCheck",
-                    "user_id": "u1", "unique_column": "id"},
+            params={"name": "ExportCheck", "user_id": "u1", "unique_column": "id"},
             files={"file": ("orig.xlsx", f)},
         )
     report_id = resp.json()["id"]
@@ -352,12 +342,7 @@ async def test_export_excel_content_matches(client: AsyncClient, simple_excel_fi
 
 
 async def test_export_json_full_structure_and_data(client: AsyncClient, tmp_path: Path) -> None:
-    df = pd.DataFrame({
-        "uid": ["x1", "x2"],
-        "amount": [10.5, 20.0],
-        "flag": [True, False],
-        "comment": ["note", None]
-    })
+    df = pd.DataFrame({"uid": ["x1", "x2"], "amount": [10.5, 20.0], "flag": [True, False], "comment": ["note", None]})
     path = tmp_path / "json_export.xlsx"
     df.to_excel(path, index=False)
 
@@ -365,7 +350,7 @@ async def test_export_json_full_structure_and_data(client: AsyncClient, tmp_path
         r = await client.post(
             "/table-reports",
             params={"name": "JSON Export", "user_id": "u1", "unique_column": "uid"},
-            files={"file": ("f.xlsx", f)}
+            files={"file": ("f.xlsx", f)},
         )
     rid = r.json()["id"]
 
@@ -376,7 +361,7 @@ async def test_export_json_full_structure_and_data(client: AsyncClient, tmp_path
     assert len(data["rows"]) == 2
 
     row1 = data["rows"][0]
-    assert row1['values']["uid"] == "x1"
-    assert row1['values']["amount"] == "10.5"
-    assert row1['values']["flag"] == "True"
-    assert row1['values']["comment"] == "note"
+    assert row1["values"]["uid"] == "x1"
+    assert row1["values"]["amount"] == "10.5"
+    assert row1["values"]["flag"] == "True"
+    assert row1["values"]["comment"] == "note"

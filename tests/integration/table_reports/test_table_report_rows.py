@@ -136,8 +136,7 @@ async def test_row_diff_comparison(repo: TableReportRepository, saved_report: Ta
     assert {"A"} == {r["unique_value"] for r in deleted}
 
 
-async def test_replace_rows_eav_integrity(
-        repo: TableReportRepository, saved_report: TableReport) -> None:
+async def test_replace_rows_eav_integrity(repo: TableReportRepository, saved_report: TableReport) -> None:
     old_rows = [
         {"col1": "K1", "col2": 1},
         {"col1": "K2", "col2": 2},
@@ -154,9 +153,7 @@ async def test_replace_rows_eav_integrity(
 
     grouped = {}
     for r in rows_in_db:
-        grouped[r.unique_value] = {
-            v.column_name: v.value for v in r.values
-        }
+        grouped[r.unique_value] = {v.column_name: v.value for v in r.values}
 
     assert "K1" not in grouped
     assert grouped["K3"] == {"col1": "K3", "col2": "3"}

@@ -158,15 +158,15 @@ async def test_validate_unique_column(service: TableReportService) -> None:
 
 async def test_compare_rows_by_unique_key(service: TableReportService, valid_excel_file: Path) -> None:
     report = await service.create_report_from_excel(
-        valid_excel_file.absolute().as_posix(), "Test Report", "user-1", "String")
+        valid_excel_file.absolute().as_posix(), "Test Report", "user-1", "String"
+    )
     old_row = report.rows
     new_rows = [
         {"String": "String_2", "Integer": "1"},
         {"String": "String_3", "Integer": "3"},
     ]
 
-    new, updated, deleted = await service._compare_rows_by_unique_column(
-        old_row, new_rows, "String")
+    new, updated, deleted = await service._compare_rows_by_unique_column(old_row, new_rows, "String")
 
     assert len(new) == 1
     assert len(updated) == 1
@@ -175,7 +175,8 @@ async def test_compare_rows_by_unique_key(service: TableReportService, valid_exc
 
 async def test_update_rows_replace(service: TableReportService, valid_excel_file: Path) -> None:
     report = await service.create_report_from_excel(
-        valid_excel_file.absolute().as_posix(), "Test Report", "user-1", "String")
+        valid_excel_file.absolute().as_posix(), "Test Report", "user-1", "String"
+    )
     new_rows = [
         {"String": "String_2", "Integer": "1"},
         {"String": "String_3", "Integer": "3"},
@@ -190,7 +191,8 @@ async def test_update_rows_replace(service: TableReportService, valid_excel_file
 
 async def test_update_rows_append(service: TableReportService, valid_excel_file: Path) -> None:
     report = await service.create_report_from_excel(
-        valid_excel_file.absolute().as_posix(), "Test Report", "user-1", "String")
+        valid_excel_file.absolute().as_posix(), "Test Report", "user-1", "String"
+    )
     new_rows = [
         {"String": "String_2", "Integer": "1"},
         {"String": "String_3", "Integer": "3"},
