@@ -1,5 +1,5 @@
+from app.config.settings import settings
 from logging.config import fileConfig
-import os
 from typing import Any, cast
 
 from dotenv import load_dotenv
@@ -16,16 +16,9 @@ if config.config_file_name is not None:
 target_metadata = ControllerBase.metadata
 
 
-def get_url() -> str:
-    url = os.getenv("DATABASE_URL")
-    if not url:
-        raise RuntimeError("DATABASE_URL не найден в .env")
-    return url
-
-
 def run_migrations_offline() -> None:
     """Запуск миграций в offline-режиме."""
-    url = get_url()
+    url = settings.DATABASE_URL
 
     context.configure(
         url=url,
@@ -40,7 +33,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Запуск миграций в online-режиме."""
-    url = get_url()
+    url = settings.DATABASE_URL
 
     section = config.get_section(config.config_ini_section)
     if section is None:

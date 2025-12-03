@@ -10,6 +10,8 @@ class TableReportCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255, description="Название отчета.")
     user_id: str = Field(min_length=1, max_length=255, description="ID пользователя")
     unique_column: str = Field(min_length=1, max_length=100, description="Имя колонки для уникального ключа")
+    template_id: Optional[int] = Field(None, description="ID шаблона")
+    additional_params: Optional[str] = Field(None, description="Дополнительные параметры")
 
     model_config = {
         "json_schema_extra": {"examples": [{"name": "Отчет №1", "user_id": "user_123", "unique_column": "id_column"}]}
@@ -52,6 +54,8 @@ class TableReportResponse(BaseModel):
     name: str = Field(description="Название отчета")
     user_id: str = Field(description="Идентификатор пользователя")
     columns_metadata: Dict[str, Any] = Field(description="Метаданные столбцов")
+    template_id: Optional[int] = Field(None, description="ID шаблона")
+    additional_params: Optional[str] = Field(None, description="Дополнительные параметры")
     total_rows: int = Field(description="Количество строк в отчете")
     created_at: datetime = Field(description="Дата создания")
     updated_at: datetime = Field(description="Дата последнего обновления")

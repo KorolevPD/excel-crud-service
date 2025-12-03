@@ -20,6 +20,16 @@ class GetQualityStatsUseCase:
         self.service = service
 
     async def execute(self, report_id: int) -> Dict[str, Any]:
+        """
+        Выполняет расчет статистики качества для указанного отчёта.
+        Args:
+            report_id (int): Идентификатор отчёта для расчета статистики.
+        Returns:
+            Dict[str, Any]: Статистика качества, включая новые, обновленные и удалённые строки, пустые и уникальные
+            значения по столбцам.
+        Raises:
+            NotFoundError: Если отчёт с указанным report_id не найден.
+        """
         logger.info(
             "Расчет статистики качества.",
             extra={

@@ -72,7 +72,6 @@ async def create_table_report(
         "Создание табличного отчeта: начало обработки.",
         extra={
             "operation": "create_table_report",
-            "filename": file.filename,
             "content_type": file.content_type,
             "request_data": data.model_dump(),
         },
@@ -85,7 +84,6 @@ async def create_table_report(
             extra={
                 "operation": "create_table_report",
                 "report_id": result.id,
-                "filename": file.filename,
             },
         )
         response.headers["Location"] = f"/table-reports/{result.id}"
@@ -94,8 +92,7 @@ async def create_table_report(
         logger.warning(
             "Ошибка валидации при создании отчeта.",
             extra={
-                "operation": "create_table_report_handler",
-                "filename": file.filename,
+                "operation": "create_table_report",
                 "error_type": type(e).__name__,
             },
         )
@@ -104,12 +101,11 @@ async def create_table_report(
         logger.exception(
             "Неожиданная ошибка при создании отчeта.",
             extra={
-                "operation": "create_table_report_handler",
-                "filename": file.filename,
+                "operation": "create_table_report",
                 "error_type": type(e).__name__,
             },
         )
-        raise HTTPException(500, detail=str(e))
+        raise HTTPException(500)
 
 
 @router.get("/table-reports/{report_id}", response_model=TableReportResponse, summary="Получение метаданных отчета")
@@ -289,7 +285,6 @@ async def update_table_report(
         extra={
             "operation": "update_table_report",
             "report_id": report_id,
-            "filename": file.filename,
             "request_data": data.model_dump(),
         },
     )

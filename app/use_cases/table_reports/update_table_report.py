@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Dict, Literal
 
-from app.exceptions import ValidationError
 from app.services.table_report_crud_service import TableReportService
 
 logger = logging.getLogger(__name__)
@@ -9,6 +8,15 @@ logger = logging.getLogger(__name__)
 
 class UpdateTableReportUseCase:
     def __init__(self, service: TableReportService):
+        """
+        Инициализирует use-case обновления отчетов.
+        Args:
+            service (TableReportService): Сервис табличных отчётов.
+        Returns:
+            None
+        Raises:
+            None
+        """
         self.service = service
 
     async def execute(
@@ -36,18 +44,6 @@ class UpdateTableReportUseCase:
                 "unique_column": unique_column,
             }
         )
-
-        if update_mode not in ("replace", "append"):
-            logger.error(
-                "Некорректный update_mode.",
-                extra={
-                    "report_id": report_id,
-                    "file_path": file_path,
-                    "update_mode": update_mode,
-                    "unique_column": unique_column,
-                }
-            )
-            raise ValidationError("Некорректный update_mode.")
 
         report = await self.service.get_report(report_id)
         stats = await self.service.update_report_from_excel(report.id, file_path, update_mode, unique_column)

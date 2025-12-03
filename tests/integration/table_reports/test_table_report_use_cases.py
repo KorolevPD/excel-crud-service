@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from app.exceptions import NotFoundError, ValidationError
+from app.exceptions import NotFoundError
 from app.services.table_report_crud_service import TableReportService
 from app.use_cases.table_reports.create_table_report import CreateTableReportUseCase
 from app.use_cases.table_reports.delete_table_report import DeleteTableReportUseCase
@@ -68,8 +68,8 @@ async def test_update_table_report_use_case(service: TableReportService, sample_
 
     uc = UpdateTableReportUseCase(service)
 
-    with pytest.raises(ValidationError):
-        await uc.execute(report.id, str(new_file), "INVALID", "id")
+    with pytest.raises(ValueError):
+        await uc.execute(report.id, str(new_file), "INVALID", "id")  # type: ignore
 
     stats = await uc.execute(report.id, str(new_file), "replace", "id")
     assert "new" in stats

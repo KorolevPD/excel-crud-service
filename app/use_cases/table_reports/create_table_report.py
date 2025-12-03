@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, Optional
 
 from app.clients.db.table_report_model import TableReport
 from app.services.table_report_crud_service import TableReportService
@@ -19,7 +20,9 @@ class CreateTableReportUseCase:
         """
         self.service = service
 
-    async def execute(self, file_path: str, name: str, user_id: str, unique_column: str) -> TableReport:
+    async def execute(self, file_path: str, name: str, user_id: str, unique_column: str,
+                      template_id: Optional[int] = None,
+                      additional_params: Optional[Dict[str, str]] = None) -> TableReport:
         """
         Создаёт отчёт на основе Excel-файла.
         Args:
@@ -43,7 +46,8 @@ class CreateTableReportUseCase:
         )
 
         try:
-            report = await self.service.create_report_from_excel(file_path, name, user_id, unique_column)
+            report = await self.service.create_report_from_excel(
+                file_path, name, user_id, unique_column, template_id, additional_params)
         except Exception as e:
             logger.error(
                 "Ошибка парсинга Excel.",

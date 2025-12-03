@@ -23,18 +23,6 @@ class TableReportService:
 
     repo: TableReportRepository
 
-    def get_repository(self) -> TableReportRepository:
-        """
-        Возвращает экземпляр репозитория TableReportRepository.
-        Args:
-            None
-        Returns:
-            TableReportRepository: Экземпляр репозитория.
-        Raises:
-            None
-        """
-        return TableReportRepository(session)
-
     def __init__(self, repository: Optional[TableReportRepository] = None) -> None:
         """
         Инициализирует сервис табличных отчётов.
@@ -47,8 +35,21 @@ class TableReportService:
         """
         self.repo = repository or self.get_repository()
 
+    def get_repository(self) -> TableReportRepository:
+        """
+        Возвращает экземпляр репозитория TableReportRepository.
+        Args:
+            None
+        Returns:
+            TableReportRepository: Экземпляр репозитория.
+        Raises:
+            None
+        """
+        return TableReportRepository(session)
+
     async def create_report_from_excel(
-        self, file_path: str, name: str, user_id: str, unique_column: str
+        self, file_path: str, name: str, user_id: str, unique_column: str, template_id: Optional[int] = None,
+        additional_params: Optional[Dict[str, str]] = None
     ) -> TableReport:
         """
         Создаёт отчёт и строки на основе Excel-файла.
@@ -81,6 +82,8 @@ class TableReportService:
             name=name,
             user_id=user_id,
             columns_metadata=columns_metadata,
+            template_id=template_id,
+            additional_params=additional_params,
         )
         report = await self.repo.create(report)
         await self.repo.create_rows(report.id, rows, unique_column)
@@ -220,7 +223,11 @@ class TableReportService:
         }
 
     async def update_report_from_excel(
-        self, report_id: int, file_path: str, update_mode: str, unique_column: str
+        self,
+        report_id: int,
+        file_path: str,
+        update_mode: str,
+        unique_column: str
     ) -> Dict[str, Any]:
         """
         Обновляет отчёт содержимым Excel-файла.
